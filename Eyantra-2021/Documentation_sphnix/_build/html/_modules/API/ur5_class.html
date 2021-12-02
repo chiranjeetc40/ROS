@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>API.ur5_class &mdash; Documentation 1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/objective.html"><strong>Objective</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/implementation.html"><strong>Implementation</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>API.ur5_class</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for API.ur5_class</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">UR5 motion handling class.</span>
+<span class="sd">9.80 pylint score.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">moveit_commander</span>
+<span class="kn">import</span> <span class="nn">moveit_msgs.msg</span>
+<span class="kn">import</span> <span class="nn">actionlib</span>
+<span class="kn">import</span> <span class="nn">rospkg</span>
+
+<span class="kn">from</span> <span class="nn">std_srvs.srv</span> <span class="k">import</span> <span class="n">Empty</span>
+<span class="kn">from</span> <span class="nn">pkg_vb_sim.srv</span> <span class="k">import</span> <span class="n">vacuumGripper</span>
+
+
+<div class="viewcode-block" id="Ur5Moveit"><a class="viewcode-back" href="../../source/API.html#API.ur5_class.Ur5Moveit">[docs]</a><span class="k">class</span> <span class="nc">Ur5Moveit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a class which implement method to move arm.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _robot_ns: namespace for handling different robot with different name .</span>
+<span class="sd">        _planning_group: planning group name configured using moveit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg_robot_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor for Ur5Moveit class.</span>
+<span class="sd">        </span>
+<span class="sd">        Initilize all attribute and wait for vaccum gripper handler server to start.</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        arg_robot_name (string): name of manipulator to be handled.used in namespace.</span>
+<span class="sd">        _computed_plan: plan computed for moving from one point to other.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">arg_robot_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_planning_group</span> <span class="o">=</span> <span class="s2">&quot;manipulator&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_commander</span> <span class="o">=</span> <span class="n">moveit_commander</span><span class="o">.</span><span class="n">roscpp_initialize</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_robot</span> <span class="o">=</span> <span class="n">moveit_commander</span><span class="o">.</span><span class="n">RobotCommander</span><span class="p">(</span>
+            <span class="n">robot_description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span> <span class="o">+</span> <span class="s2">&quot;/robot_description&quot;</span><span class="p">,</span> <span class="n">ns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scene</span> <span class="o">=</span> <span class="n">moveit_commander</span><span class="o">.</span><span class="n">PlanningSceneInterface</span><span class="p">(</span>
+            <span class="n">ns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_group</span> <span class="o">=</span> <span class="n">moveit_commander</span><span class="o">.</span><span class="n">MoveGroupCommander</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_planning_group</span><span class="p">,</span> <span class="n">robot_description</span> <span class="o">=</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span> <span class="o">+</span> <span class="s2">&quot;/robot_description&quot;</span><span class="p">,</span> <span class="n">ns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_display_trajectory_publisher</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span> <span class="o">+</span> <span class="s1">&#39;/move_group/display_planned_path&#39;</span><span class="p">,</span>
+            <span class="n">moveit_msgs</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">DisplayTrajectory</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exectute_trajectory_client</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionClient</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span> <span class="o">+</span> <span class="s1">&#39;/execute_trajectory&#39;</span><span class="p">,</span> <span class="n">moveit_msgs</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">ExecuteTrajectoryAction</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exectute_trajectory_client</span><span class="o">.</span><span class="n">wait_for_server</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_planning_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">get_planning_frame</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eef_link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">get_end_effector_link</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_group_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_robot</span><span class="o">.</span><span class="n">get_group_names</span><span class="p">()</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">wait_for_service</span><span class="p">(</span>
+            <span class="s1">&#39;/eyrc/vb/ur5/activate_vacuum_gripper/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_robot_name</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vacuum_gripper</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ServiceProxy</span><span class="p">(</span>
+            <span class="s1">&#39;/eyrc/vb/ur5/activate_vacuum_gripper/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_robot_name</span><span class="p">),</span> <span class="n">vacuumGripper</span><span class="p">)</span>
+
+        <span class="c1"># Attribute to store computed trajectory by the planner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_computed_plan</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="n">ros_pack</span> <span class="o">=</span> <span class="n">rospkg</span><span class="o">.</span><span class="n">RosPack</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pkg_path</span> <span class="o">=</span> <span class="n">ros_pack</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">&#39;pkg_task5&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pkg_path</span> <span class="o">+</span> <span class="s1">&#39;/config/saved_trajectories/&#39;</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[94m&#39;</span> <span class="o">+</span> <span class="s2">&quot; &gt;&gt;&gt; Ur5Moveit init done.&quot;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Ur5Moveit.clear_octomap"><a class="viewcode-back" href="../../source/API.html#API.ur5_class.Ur5Moveit.clear_octomap">[docs]</a>    <span class="k">def</span> <span class="nf">clear_octomap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        clear_octomap function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">clear_octomap_service_proxy</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ServiceProxy</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_robot_ns</span> <span class="o">+</span> <span class="s2">&quot;/clear_octomap&quot;</span><span class="p">,</span> <span class="n">Empty</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clear_octomap_service_proxy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Ur5Moveit.moveit_play_planned_path_from_file"><a class="viewcode-back" href="../../source/API.html#API.ur5_class.Ur5Moveit.moveit_play_planned_path_from_file">[docs]</a>    <span class="k">def</span> <span class="nf">moveit_play_planned_path_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg_file_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  is called to play saved path in yaml format</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            arg_file_name (string): file name to be played for moving arm.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            ret: return True/False if movement is successful/failed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_path</span> <span class="o">+</span> <span class="n">arg_file_name</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_open</span><span class="p">:</span>
+            <span class="n">loaded_plan</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file_open</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">loaded_plan</span><span class="p">)</span>
+        <span class="c1"># rospy.logerr(ret)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Ur5Moveit.moveit_hard_play_planned_path_from_file"><a class="viewcode-back" href="../../source/API.html#API.ur5_class.Ur5Moveit.moveit_hard_play_planned_path_from_file">[docs]</a>    <span class="k">def</span> <span class="nf">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg_file_name</span><span class="p">,</span> <span class="n">arg_max_attempts</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  is called to play saved path in yaml format with some attempts</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            arg_file_name (string): file name to be played for moving arm.</span>
+<span class="sd">            arg_max_attempts (int): No of attempts if execution is failed.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">number_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">flag_success</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">while</span> <span class="p">((</span><span class="n">number_attempts</span> <span class="o">&lt;=</span> <span class="n">arg_max_attempts</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">flag_success</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)):</span>
+            <span class="n">number_attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">flag_success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">moveit_play_planned_path_from_file</span><span class="p">(</span>
+                <span class="n">arg_file_name</span><span class="p">)</span>
+
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;attempts: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number_attempts</span><span class="p">))</span></div>
+            <span class="c1"># # self.clear_octomap()</span>
+
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Destructor of Ur5Moveit class.&quot;&quot;&quot;</span>
+        <span class="n">moveit_commander</span><span class="o">.</span><span class="n">roscpp_shutdown</span><span class="p">()</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span>
+            <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[94m&#39;</span> <span class="o">+</span> <span class="s2">&quot;Object of class Ur5Moveit Deleted.&quot;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, ck.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

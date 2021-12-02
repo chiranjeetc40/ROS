@@ -1,0 +1,7 @@
+color\_detection module
+=======================
+
+.. automodule:: color_detection
+   :members:
+   :undoc-members:
+   :show-inheritance:

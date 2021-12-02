@@ -1,0 +1,7 @@
+save\_trajectory\_ur5\_2 module
+===============================
+
+.. automodule:: save_trajectory_ur5_2
+   :members:
+   :undoc-members:
+   :show-inheritance:

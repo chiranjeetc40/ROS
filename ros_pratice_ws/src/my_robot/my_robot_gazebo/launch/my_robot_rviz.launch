@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Convert an xacro and put on parameter server -->
+<!--param name="robot_description" command="$(find xacro)/xacro.py $(find my_robot_gazebo)/urdf/eufs_base.urdf.xacro" /-->
+	
+<!-- Spawn a robot into Gazebo -->
+<!--node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-param robot_description -urdf -model my_robot" /-->
+
+
+
+       
+<launch>
+<node name="map_server" pkg="map_server" type="map_server" args="$(find my_robot_gazebo)/maps/map.yaml"/>
+  <arg name="model" default="$(find my_robot_gazebo)/urdf/my_robot1.urdf"/>
+  <arg name="gui" default="false" />
+  <arg name="rvizconfig" default="$(find my_robot_gazebo)/rviz/urdf.rviz" />
+
+  <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+
+  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+  <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  
+  <node name="rviz" pkg="rviz" type="rviz"  />
+ <include file="$(find amcl)/examples/amcl_diff.launch"/>
+</launch>

@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>API.node_action_server_ros_iot_bridge &mdash; Documentation 1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/objective.html"><strong>Objective</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/implementation.html"><strong>Implementation</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>API.node_action_server_ros_iot_bridge</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for API.node_action_server_ros_iot_bridge</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># ROS Node - Action Server - IoT ROS Bridge</span>
+<span class="c1"># This Node take goal from client to send data through mqtt or subscribe to mqtt topic and publish</span>
+<span class="c1">#  on ros topic</span>
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">actionlib</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="c1"># Message Class that is used by ROS Actions internally</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgRosIotAction</span>
+<span class="c1"># Message Class that is used for Goal Messages</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgRosIotGoal</span>
+<span class="c1"># Message Class that is used for Result Messages</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgRosIotResult</span>
+<span class="c1"># Message Class that is used for Feedback Messages</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgRosIotFeedback</span>
+<span class="c1"># Message Class for MQTT Subscription Messages</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgMqttSub</span>
+<span class="c1"># Custom Python Module to perfrom MQTT Tasks</span>
+<span class="kn">from</span> <span class="nn">pyiot</span> <span class="k">import</span> <span class="n">iot</span>
+
+
+<div class="viewcode-block" id="IotRosBridgeActionServer"><a class="viewcode-back" href="../../source/API.html#API.node_action_server_ros_iot_bridge.IotRosBridgeActionServer">[docs]</a><span class="k">class</span> <span class="nc">IotRosBridgeActionServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a class to accept goal from action client.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _ac: Action Client Initialization .</span>
+<span class="sd">        goal_handles: Dictionary to Store all the goal handels.</span>
+<span class="sd">        mqtt_sub_topic: topic to subscribe where Mqtt message is published.</span>
+<span class="sd">        http_sub_topic: spread_sheet_id of google sheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Action Server</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_as</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">ActionServer</span><span class="p">(</span><span class="s1">&#39;/action_iot_ros&#39;</span><span class="p">,</span>
+                                          <span class="n">msgRosIotAction</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">on_goal</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">on_cancel</span><span class="p">,</span>
+                                          <span class="n">auto_start</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                                          
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            * self.on_goal - It is the fuction pointer which points to a function which will be called</span>
+<span class="sd">                             when the Action Server receives a Goal.</span>
+
+<span class="sd">            * self.on_cancel - It is the fuction pointer which points to a function which will be called</span>
+<span class="sd">                             when the Action Server receives a Cancel Request.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># Read and Store IoT Configuration data from Parameter Server</span>
+        <span class="n">param_config_iot</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s1">&#39;config_iot&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_url</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;mqtt&#39;</span><span class="p">][</span><span class="s1">&#39;server_url&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_port</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;mqtt&#39;</span><span class="p">][</span><span class="s1">&#39;server_port&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_sub_topic</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;mqtt&#39;</span><span class="p">][</span><span class="s1">&#39;topic_sub&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_pub_topic</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;mqtt&#39;</span><span class="p">][</span><span class="s1">&#39;topic_pub&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_qos</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;mqtt&#39;</span><span class="p">][</span><span class="s1">&#39;qos&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_sub_cb_ros_topic</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;mqtt&#39;</span><span class="p">][</span><span class="s1">&#39;sub_cb_ros_topic&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config_googleSheet_id</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s1">&#39;google_apps&#39;</span><span class="p">][</span><span class="s1">&#39;spread_sheet_id&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Initialize ROS Topic Publication</span>
+        <span class="c1"># Incoming message from MQTT Subscription will be published on a ROS Topic (/ros_iot_bridge/mqtt/sub).</span>
+        <span class="c1"># ROS Nodes can subscribe to this ROS Topic (/ros_iot_bridge/mqtt/sub) to get messages from MQTT Subscription.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handle_ros_pub</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_sub_cb_ros_topic</span><span class="p">,</span> <span class="n">msgMqttSub</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+        <span class="c1"># Subscribe to MQTT Topic (eyrc/xYzqLm/iot_to_ros) which is defined in &#39;config_iot_ros.yaml&#39;.</span>
+        <span class="c1"># self.mqtt_sub_callback() function will be called when there is a message from MQTT Subscription.</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">iot</span><span class="o">.</span><span class="n">mqtt_subscribe_thread_start</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mqtt_sub_callback</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_url</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_port</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_sub_topic</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_qos</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;MQTT Subscribe Thread Started&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Failed to start MQTT Subscribe Thread&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Start the Action Server</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_as</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Started ROS-IoT Bridge Action Server.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># This is a callback function for MQTT Subscriptions</span>
+
+<div class="viewcode-block" id="IotRosBridgeActionServer.mqtt_sub_callback"><a class="viewcode-back" href="../../source/API.html#API.node_action_server_ros_iot_bridge.IotRosBridgeActionServer.mqtt_sub_callback">[docs]</a>    <span class="k">def</span> <span class="nf">mqtt_sub_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">userdata</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">payload</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[MQTT SUB CB] Message: &quot;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[MQTT SUB CB] Topic: &quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">topic</span><span class="p">)</span>
+
+        <span class="n">msg_mqtt_sub</span> <span class="o">=</span> <span class="n">msgMqttSub</span><span class="p">()</span>
+        <span class="n">msg_mqtt_sub</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Time</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">msg_mqtt_sub</span><span class="o">.</span><span class="n">topic</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">topic</span>
+        <span class="n">msg_mqtt_sub</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">payload</span>
+    <span class="c1"># Publish msg from mqtt topic to ros topic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handle_ros_pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">msg_mqtt_sub</span><span class="p">)</span></div>
+
+    <span class="c1"># This function will be called when Action Server receives a Goal</span>
+
+<div class="viewcode-block" id="IotRosBridgeActionServer.on_goal"><a class="viewcode-back" href="../../source/API.html#API.node_action_server_ros_iot_bridge.IotRosBridgeActionServer.on_goal">[docs]</a>    <span class="k">def</span> <span class="nf">on_goal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal_handle</span><span class="p">):</span>
+        <span class="n">goal</span> <span class="o">=</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_goal</span><span class="p">()</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Received new goal from Client&quot;</span><span class="p">)</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="n">goal</span><span class="p">)</span>
+
+        <span class="c1"># Validate incoming goal parameters </span>
+        <span class="k">if</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">protocol</span> <span class="o">==</span> <span class="s2">&quot;mqtt&quot;</span> <span class="ow">or</span> <span class="n">goal</span><span class="o">.</span><span class="n">protocol</span> <span class="o">==</span> <span class="s2">&quot;http&quot;</span><span class="p">):</span>
+
+            <span class="k">if</span><span class="p">((</span><span class="n">goal</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;pub&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;sub&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;NA&quot;</span><span class="p">)):</span>
+                <span class="n">goal_handle</span><span class="o">.</span><span class="n">set_accepted</span><span class="p">()</span>
+
+                <span class="c1"># Start a new thread to process new goal from the client (For Asynchronous Processing of Goals)</span>
+                <span class="c1"># &#39;self.process_goal&#39; - is the function pointer which points to a function that will process incoming Goals</span>
+                <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;worker&quot;</span><span class="p">,</span>
+                                          <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">process_goal</span><span class="p">,</span>
+                                          <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">goal_handle</span><span class="p">,))</span>
+                <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">goal_handle</span><span class="o">.</span><span class="n">set_rejected</span><span class="p">()</span>
+                <span class="k">return</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">goal_handle</span><span class="o">.</span><span class="n">set_rejected</span><span class="p">()</span>
+            <span class="k">return</span></div>
+
+    <span class="c1"># This function is called is a separate thread to process Goal.</span>
+
+<div class="viewcode-block" id="IotRosBridgeActionServer.process_goal"><a class="viewcode-back" href="../../source/API.html#API.node_action_server_ros_iot_bridge.IotRosBridgeActionServer.process_goal">[docs]</a>    <span class="k">def</span> <span class="nf">process_goal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal_handle</span><span class="p">):</span>
+        <span class="n">flag_success</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">msgRosIotResult</span><span class="p">()</span>
+
+        <span class="n">goal_id</span> <span class="o">=</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_goal_id</span><span class="p">()</span>
+        <span class="n">goal</span> <span class="o">=</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_goal</span><span class="p">()</span>
+
+        <span class="c1"># Goal Processing</span>
+        <span class="k">if</span> <span class="n">goal</span><span class="o">.</span><span class="n">protocol</span> <span class="o">==</span> <span class="s2">&quot;mqtt&quot;</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;MQTT&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">goal</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;pub&quot;</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;MQTT PUB Goal ID: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">goal_id</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">topic</span> <span class="o">+</span> <span class="s2">&quot; &gt; &quot;</span> <span class="o">+</span> <span class="n">goal</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="c1">#start publish thread in iot module to publish message</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">iot</span><span class="o">.</span><span class="n">mqtt_publish</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_url</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_port</span><span class="p">,</span>
+                                       <span class="n">goal</span><span class="o">.</span><span class="n">topic</span><span class="p">,</span>
+                                       <span class="n">goal</span><span class="o">.</span><span class="n">message</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_qos</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;MQTT Publish Successful.&quot;</span><span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;MQTT Failed to Publish&quot;</span><span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">elif</span> <span class="n">goal</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;sub&quot;</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;MQTT SUB Goal ID: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">goal_id</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">topic</span><span class="p">)</span>
+                <span class="c1">#start subscribe thread in iot module to subscribe to mqtt topic</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">iot</span><span class="o">.</span><span class="n">mqtt_subscribe_thread_start</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mqtt_sub_callback</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_url</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_server_port</span><span class="p">,</span>
+                                                      <span class="n">goal</span><span class="o">.</span><span class="n">topic</span><span class="p">,</span>
+                                                      <span class="bp">self</span><span class="o">.</span><span class="n">_config_mqtt_qos</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;MQTT Subscribe Thread Started&quot;</span><span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Failed to start MQTT Subscribe Thread&quot;</span><span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="k">elif</span> <span class="n">goal</span><span class="o">.</span><span class="n">protocol</span> <span class="o">==</span> <span class="s2">&quot;http&quot;</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">logwarn</span><span class="p">(</span><span class="s2">&quot;HTTP&quot;</span><span class="p">)</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;http Goal ID: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">goal_id</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+            
+            <span class="n">parameters</span> <span class="o">=</span><span class="nb">eval</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>  <span class="c1">#convert string to dictionary to push many argument once</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">iot</span><span class="o">.</span><span class="n">sheet_push</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">topic</span><span class="p">,</span><span class="n">parameters</span><span class="p">)</span> 
+            
+            <span class="k">if</span> <span class="n">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Data is Uploaded on Sheet&quot;</span><span class="p">)</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">logerr</span><span class="p">(</span><span class="s2">&quot;Failed to upload Data To  Sheet&quot;</span><span class="p">)</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">=</span> <span class="kc">False</span>
+
+        
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Send goal result to client Succeeded&quot;</span><span class="p">)</span>
+            <span class="n">goal_handle</span><span class="o">.</span><span class="n">set_succeeded</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Send goal result to client Goal Failed. Aborting.&quot;</span><span class="p">)</span>
+            <span class="n">goal_handle</span><span class="o">.</span><span class="n">set_aborted</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Goal ID: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">goal_id</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; Goal Processing Done.&quot;</span><span class="p">)</span></div>
+
+    <span class="c1"># This function will be called when Goal Cancel request is send to the Action Server</span>
+<div class="viewcode-block" id="IotRosBridgeActionServer.on_cancel"><a class="viewcode-back" href="../../source/API.html#API.node_action_server_ros_iot_bridge.IotRosBridgeActionServer.on_cancel">[docs]</a>    <span class="k">def</span> <span class="nf">on_cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal_handle</span><span class="p">):</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Received cancel request.&quot;</span><span class="p">)</span>
+        <span class="n">goal_id</span> <span class="o">=</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_goal_id</span><span class="p">()</span></div></div>
+
+
+<span class="c1"># Main</span>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../source/API.html#API.node_action_server_ros_iot_bridge.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="s1">&#39;node_iot_ros_bridge_action_server&#39;</span><span class="p">)</span>
+
+    <span class="n">action_server</span> <span class="o">=</span> <span class="n">IotRosBridgeActionServer</span><span class="p">()</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">spin</span><span class="p">()</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, ck.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+
+<launch>
+    <include file="$(find pkg_vb_sim)/launch/task6_simulation.launch" />
+    <include file="$(find pkg_task5)/launch/two_ur5_move_group.launch" />
+    
+    
+    <rosparam file ="$(find pkg_ros_iot_bridge)/config/config_pyiot.yaml"/>    
+	<node pkg="pkg_ros_iot_bridge" type="node_action_server_ros_iot_bridge.py" name="node_iot_ros_bridge_action_server" output="screen"/>	
+	
+    <!--This node is for ur5_1 which play trajectory saved in task4/config/saved_trajectory-->
+    <node name= "node_ur5_1_pick_place" pkg= "pkg_task5" type="node_ur5_1_pick_place.py" output="screen"/>
+    
+    <!--This node is for ur5_2 which play trajectory saved in task4/config/saved_trajectory-->
+    <!--It also call function from another script for detection of colour-->
+    <node name= "node_ur5_2_pick_place" pkg= "pkg_task5" type="node_ur5_2_pick_place.py" output="screen"/>
+
+    <!-- Recording Bag File for Submission -->
+    <arg name="record" default="false"/>
+    <arg name="rec_name" default="t5.bag"/>
+
+    <group if="$(arg record)">
+        <node name="rosbag_record_pick" pkg="rosbag" type="record"
+       args="record -O $(find pkg_task5)/bag_files/$(arg rec_name) --chunksize=10 /eyrc/vb/ur5_1/vacuum_gripper/logical_camera/ur5_1 /eyrc/vb/ur5_2/vacuum_gripper/logical_camera/ur5_2" output="screen"/>
+    </group>
+
+</launch>

@@ -1,0 +1,280 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Implementation &mdash; Documentation 1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API" href="modules.html" />
+    <link rel="prev" title="Introduction" href="introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="objective.html"><strong>Objective</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><strong>Implementation</strong></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#package-detection"><strong>Package Detection</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sending-data-to-ims"><strong>Sending Data to IMS</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ros-iot-bridge"><strong>Ros IOT bridge</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#receiving-dispatching-order"><strong>Receiving &amp; Dispatching Order</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shipping-of-order"><strong>Shipping of order</strong></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><strong>Implementation</strong></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/source/implementation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="implementation">
+<h1><strong>Implementation</strong><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="package-detection">
+<h2><strong>Package Detection</strong><a class="headerlink" href="#package-detection" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Get raw iamge published on ROS topic</li>
+<li>Crop image to remove unwanted part like background.</li>
+<li>As Box position is fixed on shelf so pixel position for different box is fixed in image of shelf. Use predefine value start_row,end_row,start_coloum,end_coloum for image croping to extract particular box from image.</li>
+<li>Do this with all box in image as position to place box in shelf is fixed.</li>
+<li>Crop image in order the box is placed and pass each cropped image in QR detector function to detect colour of image.</li>
+<li>Store data in dictionary with position of box as key and colour of box as value.</li>
+</ol>
+</div>
+<div class="section" id="sending-data-to-ims">
+<h2><strong>Sending Data to IMS</strong><a class="headerlink" href="#sending-data-to-ims" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Store value in different attribute so it can be sent to different sheet of IMS.</li>
+<li>Different method <strong>format</strong> order data according to requirement of Inventory management sheet.</li>
+<li>After formating data it is sent to action server to handle different goal.</li>
+</ol>
+</div>
+<div class="section" id="ros-iot-bridge">
+<h2><strong>Ros IOT bridge</strong><a class="headerlink" href="#ros-iot-bridge" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Receive orders from mqtt topic by subscribing to it.also update it on incoming order sheet simultatenesly.</li>
+<li>Short order by their priority abailable at that time and place high priority order first.update on sheet.</li>
+<li>Use ur5_2 arm to sort package where colour of package is knoen by fetching data from list of placed order by ur5_1.update on sheet.</li>
+</ol>
+</div>
+<div class="section" id="receiving-dispatching-order">
+<h2><strong>Receiving &amp; Dispatching Order</strong><a class="headerlink" href="#receiving-dispatching-order" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>start kepping track of order placed and order completed.</li>
+<li>Map item name to colour of package, which is used to acess colour by giving item ordered.</li>
+<li>map colour of package with it’s position and map position with file_name of saved trajectory.</li>
+<li>detect colour of package and update inventory sheet.</li>
+<li>subscribe to topic for receiving order and update incoming_order sheet once recieved.</li>
+<li>sort order and take high priority order first.</li>
+<li>use item from order information and fetch file name for saved trajectory to go to desired position.</li>
+<li>grab package and  go to conveyer belt and place order.</li>
+<li>update dispatched sheet.</li>
+<li>kepp repeating step 6 to 9.</li>
+</ol>
+</div>
+<div class="section" id="shipping-of-order">
+<h2><strong>Shipping of order</strong><a class="headerlink" href="#shipping-of-order" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>subscribe to logical camera 2 which is used to know if packag is available.</li>
+<li>If package is abailable then save it’s position and name.</li>
+<li>Start running conveyer belt at max speed.</li>
+<li>Run conveyer till package is abailable at desired location.</li>
+<li>Use service to know which order have been recently dispatched by ur5_1.</li>
+<li>Move ur5_2 to fetching position and if box is present grab it.</li>
+<li>use order information from service to know item and then map it to colour.</li>
+<li>place package in bin that match maped colour to item.</li>
+<li>repeat process.</li>
+</ol>
+<div class="figure align-center" id="id1">
+<img alt="../_images/rosgraph.png" src="../_images/rosgraph.png" />
+<p class="caption"><span class="caption-text">Rqt graph showing how each node intract</span></p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="modules.html" class="btn btn-neutral float-right" title="API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="introduction.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, ck.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

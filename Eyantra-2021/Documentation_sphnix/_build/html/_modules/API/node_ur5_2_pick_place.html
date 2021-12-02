@@ -1,0 +1,351 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>API.node_ur5_2_pick_place &mdash; Documentation 1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/objective.html"><strong>Objective</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/implementation.html"><strong>Implementation</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>API.node_ur5_2_pick_place</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for API.node_ur5_2_pick_place</h1><div class="highlight"><pre>
+<span></span><span class="ch">#! /usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This script pick and place package In respective bin based on colour of package using UR5_arm_2.</span>
+<span class="sd">first detect all package colour then start conveyer and when any package come at grabbing position</span>
+<span class="sd">under logical camera,</span>
+<span class="sd">conveyer stops and colour of box is known by using name of pckage as key and get colour from</span>
+<span class="sd">color_package_dict and place on respective bin.</span>
+<span class="sd">8.67 pylint&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">from</span> <span class="nn">pkg_vb_sim.msg</span> <span class="k">import</span> <span class="n">LogicalCameraImage</span>
+<span class="kn">from</span> <span class="nn">pkg_vb_sim.srv</span> <span class="k">import</span> <span class="n">conveyorBeltPowerMsg</span>
+<span class="kn">from</span> <span class="nn">pkg_task5.srv</span> <span class="k">import</span> <span class="n">OrderPlaced</span>
+<span class="kn">from</span> <span class="nn">node_update_inventory</span> <span class="k">import</span> <span class="n">IotRosBridgeActionClient</span><span class="p">,</span> <span class="n">ManageSheet</span>
+<span class="kn">import</span> <span class="nn">ur5_class</span>
+
+
+<div class="viewcode-block" id="ShipOrder"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_2_pick_place.ShipOrder">[docs]</a><span class="k">class</span> <span class="nc">ShipOrder</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class implement interface to place package from conveyer belt to respective bin.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes: </span>
+<span class="sd">    package_position (float):  it store position where package is present in logical camera range.</span>
+<span class="sd">    package_name (string): It  store name of package detected by logical camera.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor for ShipOrder class.</span>
+<span class="sd">        Initilize all attribute and start conveyer belt in thread.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">package_position</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">package_name</span> <span class="o">=</span> <span class="kc">None</span>
+       
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;conveyer_handler&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">control_conveyer</span><span class="p">)</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        
+<div class="viewcode-block" id="ShipOrder.callback"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_2_pick_place.ShipOrder.callback">[docs]</a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is callback function called whenever data is published on /eyrc/vb/logical_camera_2 topic.</span>
+<span class="sd">        If any package with predefined name is present under logical camera then first package name and</span>
+<span class="sd">        Y position is assigned to package_name and package_position.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#implement logic to assign value in such that no need for packages list. </span>
+        <span class="c1"># if data.models is not empty get values . </span>
+        <span class="n">packages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;packagen00&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen01&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen02&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen10&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;packagen11&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen12&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen20&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen21&quot;</span><span class="p">,</span> <span class="s2">&quot;packagen22&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="c1"># remove this package name and implement something other like if type is not none</span>
+            <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">packages</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">package_position</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">package_name</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">type</span>
+                <span class="k">break</span></div>
+
+    
+<div class="viewcode-block" id="ShipOrder.control_conveyer"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_2_pick_place.ShipOrder.control_conveyer">[docs]</a>    <span class="k">def</span> <span class="nf">control_conveyer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function control conveyer belt.</span>
+<span class="sd">        If any package is at grabbing position then it stops and if not then it keep running.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">wait_for_service</span><span class="p">(</span><span class="s1">&#39;/eyrc/vb/conveyor/set_power&#39;</span><span class="p">)</span>
+        <span class="n">conveyor_belt</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ServiceProxy</span><span class="p">(</span>
+            <span class="s1">&#39;/eyrc/vb/conveyor/set_power&#39;</span><span class="p">,</span> <span class="n">conveyorBeltPowerMsg</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># start conveyor belt at max speed and run till package not at grabbing position</span>
+            <span class="n">conveyor_belt</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+            <span class="k">while</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">package_position</span> <span class="o">&gt;</span> <span class="mf">0.08</span><span class="p">):</span>
+                <span class="k">pass</span>
+            <span class="c1"># stop conveyor belt till package is at grabbing position</span>
+            <span class="n">conveyor_belt</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">while</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_name</span> <span class="o">!=</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">package_position</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">):</span>
+                <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ShipOrder.get_colour_order_id"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_2_pick_place.ShipOrder.get_colour_order_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_colour_order_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function return colour of package that is present  in front of logical camera.</span>
+<span class="sd">        Return colour and order information of that package.&quot;&quot;&quot;</span>
+        
+        <span class="c1"># Improve below logic.</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">wait_for_service</span><span class="p">(</span><span class="s1">&#39;process_placed_order&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Waiting for server&quot;</span><span class="p">)</span>
+        <span class="n">item_colour_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Medicine&quot;</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;Food&quot;</span><span class="p">:</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;Clothes&quot;</span><span class="p">:</span> <span class="s2">&quot;yellow&quot;</span><span class="p">}</span>
+        <span class="n">colour_order_id</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ServiceProxy</span><span class="p">(</span><span class="s1">&#39;process_placed_order&#39;</span><span class="p">,</span> <span class="n">OrderPlaced</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">colour_order_id</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">colour</span><span class="p">)</span>
+            <span class="n">ac_colour</span> <span class="o">=</span> <span class="n">item_colour_mapping</span><span class="p">[</span><span class="n">order</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]]</span>
+            <span class="k">return</span> <span class="n">ac_colour</span><span class="p">,</span><span class="n">order</span>
+            
+        <span class="k">except</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ServiceException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;Service did not process request: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_2_pick_place.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This main function implement logic to pick and place package in bin. &quot;&quot;&quot;</span>
+    <span class="c1"># Initilize node.</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="s1">&#39;node_ur5_2_pick_place&#39;</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># Initilize ur5 class to send handle ur5_2 arm.</span>
+    <span class="n">ur5</span> <span class="o">=</span> <span class="n">ur5_class</span><span class="o">.</span><span class="n">Ur5Moveit</span><span class="p">(</span><span class="s2">&quot;ur5_2&quot;</span><span class="p">)</span>
+    <span class="c1"># Initilize ManageSheet class to send data to sheet.</span>
+    <span class="n">sheet</span> <span class="o">=</span> <span class="n">ManageSheet</span><span class="p">()</span>
+    <span class="c1"># Initilize ShipOrder class to ship order.</span>
+    <span class="n">orders</span> <span class="o">=</span> <span class="n">ShipOrder</span><span class="p">()</span>
+    
+    <span class="c1"># Subscribe to logical camera topic so that pacakge received can be processed.</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="s2">&quot;/eyrc/vb/logical_camera_2&quot;</span><span class="p">,</span> <span class="n">LogicalCameraImage</span><span class="p">,</span> <span class="n">orders</span><span class="o">.</span><span class="n">callback</span><span class="p">)</span>
+    <span class="c1">#it is placed as if any order is not present arm has to wait which offset angle due to playing arm fails.</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+
+    <span class="n">order_shiped</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># Total order shiped.</span>
+    <span class="c1">#resiting of pose of arm to compenseate for offset due to waiting can be overcome by setting to that pose again </span>
+    <span class="c1"># using co-ordinate method to go to that pose. as it will take less time.</span>
+    <span class="n">ur5</span><span class="o">.</span><span class="n">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="s1">&#39;ip.yaml&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># wait till no package is available in front of arm.and continue if it&#39;s there.</span>
+        <span class="k">while</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">package_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">orders</span><span class="o">.</span><span class="n">package_position</span> <span class="o">&gt;</span> <span class="mf">0.08</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="c1"># call service to know which package has been recently sent so that colour can be known. </span>
+        <span class="c1"># service is called by get_colour_order_id function.</span>
+        <span class="c1"># colour of package can be known by package name becaus package name and  colour is related but  </span>
+        <span class="c1"># maybe in some situation service wala is better.</span>
+        <span class="n">package_colour</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="n">orders</span><span class="o">.</span><span class="n">get_colour_order_id</span><span class="p">()</span>
+        <span class="c1"># As pacakge present in front is processed so set name and position of package </span>
+        <span class="c1"># to None to know no package is now present.</span>
+        <span class="n">orders</span><span class="o">.</span><span class="n">package_position</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">orders</span><span class="o">.</span><span class="n">package_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Pick package and place in respective colour bin and palce it.</span>
+        <span class="c1">#file name to go to pose and come to picking psoe is related to first char of colour name.</span>
+        <span class="n">ur5</span><span class="o">.</span><span class="n">vacuum_gripper</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">trajectory_name</span> <span class="o">=</span> <span class="s2">&quot;p</span><span class="si">{}</span><span class="s2">.yaml&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">package_colour</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ur5</span><span class="o">.</span><span class="n">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="n">trajectory_name</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="n">ur5</span><span class="o">.</span><span class="n">vacuum_gripper</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="c1">#update update_orders_shipped_sheet </span>
+        <span class="n">sheet</span><span class="o">.</span><span class="n">update_orders_shipped_sheet</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="c1"># Go to picking position again </span>
+        <span class="n">trajectory_name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">p.yaml&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">package_colour</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ur5</span><span class="o">.</span><span class="n">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="n">trajectory_name</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">del</span> <span class="n">ur5</span></div>
+    
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, ck.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

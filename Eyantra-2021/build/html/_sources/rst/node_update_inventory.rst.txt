@@ -1,0 +1,7 @@
+node\_update\_inventory module
+==============================
+
+.. automodule:: node_update_inventory
+   :members:
+   :undoc-members:
+   :show-inheritance:

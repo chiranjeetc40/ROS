@@ -1,0 +1,356 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>API.node_ur5_1_pick_place &mdash; Documentation 1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/objective.html"><strong>Objective</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/implementation.html"><strong>Implementation</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>API.node_ur5_1_pick_place</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for API.node_ur5_1_pick_place</h1><div class="highlight"><pre>
+<span></span><span class="ch">#! /usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This script pick and place package on conveyer from kiva pod using UR5_arm_1.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgMqttSub</span>
+<span class="kn">from</span> <span class="nn">node_update_inventory</span> <span class="k">import</span> <span class="n">ManageSheet</span>
+<span class="kn">from</span> <span class="nn">pkg_task5.srv</span> <span class="k">import</span> <span class="n">OrderPlaced</span><span class="p">,</span> <span class="n">OrderPlacedResponse</span>
+<span class="kn">from</span> <span class="nn">color_detection</span> <span class="k">import</span> <span class="n">Camera</span>
+<span class="kn">import</span> <span class="nn">ur5_class</span>
+
+<div class="viewcode-block" id="DispatchOrder"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_1_pick_place.DispatchOrder">[docs]</a><span class="k">class</span> <span class="nc">DispatchOrder</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class implement logic to dispatch the order given.</span>
+<span class="sd">    Attribute:</span>
+<span class="sd">    orders_list: list of order placed on mqtt topic.</span>
+<span class="sd">    orders_completed (dictinary): orders that has been dispatched wih order id as key.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_list</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_completed</span><span class="o">=</span><span class="p">[]</span>
+        <span class="c1">#logic to get file to play is complex make it simple.</span>
+                              
+        <span class="c1"># It store package position with key as colour of that package.</span>
+        <span class="c1"># When particular package is needed then it&#39;s colour can be used to acess file position</span>
+        <span class="c1"># which can be played to move arm to that position. colour and pose relationship is given by Camera class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colour_pose</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;green&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;yellow&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="c1"># Ordered item is maped to colour of package so package colour can be known.</span>
+        <span class="c1"># This colour name is used to acess position of package.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item_colour_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Medicine&quot;</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;Food&quot;</span><span class="p">:</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;Clothes&quot;</span><span class="p">:</span> <span class="s2">&quot;yellow&quot;</span><span class="p">}</span>
+        <span class="c1">#position of package is used to acess file name to be played because file name is based on position of package.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pose_file_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;00&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i0.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p0.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;0p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;01&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i1.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p1.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;1p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;02&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i2.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p2.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;2p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;10&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i3.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p3.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;3p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;11&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i4.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p4.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;4p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;12&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i5.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p5.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;5p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;20&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i6.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p6.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;6p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;21&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i7.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p7.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;7p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;22&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i8.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p8.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;8p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;30&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i9.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p9.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;9p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;31&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i10.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p10.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;10p.yaml&quot;</span><span class="p">],</span>
+                          <span class="s2">&quot;32&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;i11.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;p11.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;11p.yaml&quot;</span><span class="p">]}</span>
+        
+        <span class="c1"># It is service handler which accept Empty request and send order information that has been sent.</span>
+        <span class="c1"># It&#39;s logic is also need to improve as order_id is no longer requred in new logic but it&#39;s there in message.</span>
+        <span class="c1"># service handler function run more than one time if task is failed in ur5_2 so fix there.</span>
+        <span class="n">serv</span><span class="o">=</span><span class="n">rospy</span><span class="o">.</span><span class="n">Service</span><span class="p">(</span><span class="s1">&#39;process_placed_order&#39;</span><span class="p">,</span> <span class="n">OrderPlaced</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_placed_order</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="DispatchOrder.file_name"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_1_pick_place.DispatchOrder.file_name">[docs]</a>    <span class="k">def</span> <span class="nf">file_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">item</span><span class="p">):</span>
+        <span class="n">colour</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_colour_mapping</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+        <span class="n">pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colour_pose</span><span class="p">[</span><span class="n">colour</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pose_file_dict</span><span class="p">[</span><span class="n">pose</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colour_pose</span><span class="p">[</span><span class="n">colour</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span></div>
+    
+<div class="viewcode-block" id="DispatchOrder.handle_placed_order"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_1_pick_place.DispatchOrder.handle_placed_order">[docs]</a>    <span class="k">def</span> <span class="nf">handle_placed_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">request</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  will be called when there is a change of state</span>
+<span class="sd">        in the Action Client State Machine</span>
+
+<span class="sd">        Parameters: goal_handle (dictionary): Goals to be send to action server .</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># deque from que of placed order</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orders_completed</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">OrderPlacedResponse</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span></div>
+                
+<div class="viewcode-block" id="DispatchOrder.callback"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_1_pick_place.DispatchOrder.callback">[docs]</a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">msg</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Callback function is called whenever order is published on subscribed topic.</span>
+<span class="sd">        Update value in attribute of class.</span>
+<span class="sd">        Parameters: </span>
+<span class="sd">            msg: Order Information.</span>
+<span class="sd">            args: It&#39;s list containing Sheet object for updating sheet.</span>
+<span class="sd">        Returns: </span>
+<span class="sd">            None.&quot;&quot;&quot;</span>
+        
+        <span class="n">dictinary</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">update_incoming_order_sheet</span><span class="p">(</span><span class="n">dictinary</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">dictinary</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">],</span><span class="n">dictinary</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">],</span><span class="n">dictinary</span><span class="p">])</span></div></div>
+        
+       
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../source/API.html#API.node_ur5_1_pick_place.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The main function which implement pick place logic.&quot;&quot;&quot;</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="s1">&#39;node_ur5_1_pick_place&#39;</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ur5</span> <span class="o">=</span> <span class="n">ur5_class</span><span class="o">.</span><span class="n">Ur5Moveit</span><span class="p">(</span><span class="s2">&quot;ur5_1&quot;</span><span class="p">)</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">detact_colour</span> <span class="o">=</span> <span class="n">Camera</span><span class="p">()</span>
+    <span class="n">sheet</span> <span class="o">=</span> <span class="n">ManageSheet</span><span class="p">()</span>
+    <span class="n">orders</span> <span class="o">=</span> <span class="n">DispatchOrder</span><span class="p">()</span>
+        
+    <span class="c1"># Detect colour of package present in pod with position of package as key to colour value.</span>
+    <span class="c1"># put all position as value in colour_pose to acess pose based on colour value.</span>
+    <span class="n">color_package_dict</span> <span class="o">=</span> <span class="n">detact_colour</span><span class="o">.</span><span class="n">colour_pacakge</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">pose</span><span class="p">,</span> <span class="n">colour</span> <span class="ow">in</span> <span class="n">color_package_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">orders</span><span class="o">.</span><span class="n">colour_pose</span><span class="p">[</span><span class="n">colour</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pose</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">detact_colour</span>
+    <span class="c1"># Update Inventory sheet by sending package info which has been detected by camera.</span>
+    <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;inventory sheet&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">update_inventory_sheet</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">color_package_dict</span><span class="p">,))</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    
+    <span class="c1"># Subscribe to order recieving topic so that order received can be saved and processed.</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s2">&quot;config_iot&quot;</span><span class="p">)[</span><span class="s2">&quot;mqtt&quot;</span><span class="p">][</span><span class="s2">&quot;sub_cb_ros_topic&quot;</span><span class="p">],</span>
+                     <span class="n">msgMqttSub</span><span class="p">,</span> <span class="n">orders</span><span class="o">.</span><span class="n">callback</span><span class="p">,</span> <span class="p">(</span><span class="n">sheet</span><span class="p">,))</span>
+
+    <span class="c1">#wait for order.</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">orders</span><span class="o">.</span><span class="n">orders_list</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="c1"># go from initial pose to picking pose.    </span>
+    <span class="n">ur5</span><span class="o">.</span><span class="n">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="s2">&quot;ipl.yaml&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">order_dispatched</span> <span class="o">=</span> <span class="mi">0</span>        <span class="c1">#Count no of order dispatched.    </span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1">#if order present then proced to process it.</span>
+        <span class="k">if</span> <span class="n">orders</span><span class="o">.</span><span class="n">orders_list</span><span class="p">:</span>
+            
+            <span class="c1"># Sort order so that highest order is processed first.</span>
+            <span class="c1"># first value of orders_list is item(Medicine,Food,Clothes) which is sorted in priority order </span>
+            <span class="c1"># due to alphabet of sorting of them.</span>
+            <span class="c1"># get high priorit order as it will be 1st after sorting.</span>
+            <span class="n">orders</span><span class="o">.</span><span class="n">orders_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            
+            <span class="c1"># Remove that order from orders_list</span>
+            <span class="n">order_priority</span> <span class="o">=</span> <span class="n">orders</span><span class="o">.</span><span class="n">orders_list</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="c1"># get file name to play to reach required item. this logic can be chnaged.</span>
+            <span class="c1"># it return file to go to that position from initial, from placing to package and return to placing position.</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">orders</span><span class="o">.</span><span class="n">file_name</span><span class="p">(</span><span class="n">order_priority</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="c1">#as arm already is at placing position play place pose to pacakge pose.and pick package.</span>
+            <span class="n">ur5</span><span class="o">.</span><span class="n">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">4</span><span class="p">)</span>
+            <span class="n">ur5</span><span class="o">.</span><span class="n">vacuum_gripper</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1">#go to placing position and put pacakge.</span>
+            <span class="n">ur5</span><span class="o">.</span><span class="n">moveit_hard_play_planned_path_from_file</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mi">4</span><span class="p">)</span>
+            <span class="n">ur5</span><span class="o">.</span><span class="n">vacuum_gripper</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            
+            <span class="c1">#update update_orders_dispatched_sheet that order has been dispatched. this can done in threading</span>
+            <span class="c1"># like just call function and return. if this is implemented in thread then assumption will be that till next function call </span>
+            <span class="c1"># data will be updated i.e function had processed previous call.</span>
+            <span class="n">sheet</span><span class="o">.</span><span class="n">update_orders_dispatched_sheet</span><span class="p">(</span><span class="n">order_priority</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            
+            <span class="c1"># Add that order to orders_completed list so that it can be sent to ur5_2 as service.</span>
+            <span class="n">orders</span><span class="o">.</span><span class="n">orders_completed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">order_priority</span><span class="p">)</span>
+            <span class="n">order_dispatched</span> <span class="o">+=</span> <span class="mi">1</span>       
+    <span class="k">del</span> <span class="n">ur5</span></div>
+    
+    
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+    
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, ck.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

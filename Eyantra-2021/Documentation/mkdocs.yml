@@ -1,0 +1,17 @@
+site_name: VB_1544
+nav:
+  - Objective: index.md
+  - Solution Introduction: Introduction\introduction.md
+  - Implementation: Implementation\implementation.md
+  - API Documentation: Api_documentation\api_documentation.md
+  - About: About\about.md
+
+theme:
+  name: readthedocs
+  highlightjs: true
+  nav_style: dark
+plugins:
+    - search
+    - mermaid2
+    
+use_directory_urls: false

@@ -1,0 +1,13 @@
+source
+======
+
+.. toctree::
+   :maxdepth: 4
+
+   color_detection
+   node_update_inventory
+   node_ur5_1_pick_place
+   node_ur5_2_pick_place
+   save_trajectory_ur5_1
+   save_trajectory_ur5_2
+   ur5_class

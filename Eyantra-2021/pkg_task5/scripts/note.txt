@@ -1,0 +1,7 @@
+# Here we wait for first order to arrive so that it can be processed
+    # waiting here is not good idea because order can take time after 1 order also 
+    # but i have to do this because putting arm at one location and waiting put arm angle to different value.
+    # so place arm only when you need to play.
+    # one other solution is play first and then set again to that angle without playing file and decreasing time to plan.
+    # one solution is to go to whatever box from initial to that box pose but is also may crate that problem.
+    

@@ -1,0 +1,14 @@
+<launch>
+
+<node name="talker" pkg="pratice"
+type="talker.py" output="screen" />
+
+<node name="listener" pkg="pratice" type="listener.py" output="screen" />
+
+<!--pkg is the package name which you have created
+type is the name of executable file
+name is the name of the node which is created in that executable
+output means it will print the data given to the roslog command-->
+</launch>
+
+

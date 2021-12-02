@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html4" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>API.node_update_inventory &mdash; Documentation 1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Documentation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../source/objective.html"><strong>Objective</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/implementation.html"><strong>Implementation</strong></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../source/modules.html">API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Documentation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>API.node_update_inventory</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for API.node_update_inventory</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">ROS Node - for updating Inventory sheet.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">actionlib</span>
+<span class="kn">from</span> <span class="nn">pkg_ros_iot_bridge.msg</span> <span class="k">import</span> <span class="n">msgRosIotAction</span><span class="p">,</span> <span class="n">msgRosIotGoal</span><span class="p">,</span> <span class="n">msgRosIotResult</span>
+
+
+<div class="viewcode-block" id="IotRosBridgeActionClient"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.IotRosBridgeActionClient">[docs]</a><span class="k">class</span> <span class="nc">IotRosBridgeActionClient</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a class to send goal to action server which act as bridge between IOT and ROS.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        _ac: Action Client Initialization .</span>
+<span class="sd">        goal_handles: Dictionary to Store all the goal handels.</span>
+<span class="sd">        mqtt_sub_topic: topic to subscribe where Mqtt message is published.</span>
+<span class="sd">        http_sub_topic: spread_sheet_id of google sheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor for IotRosBridgeActionClient class.</span>
+
+<span class="sd">        Initilize all attribute and wait_for_server to start.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ac</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">ActionClient</span><span class="p">(</span><span class="s2">&quot;/action_iot_ros&quot;</span><span class="p">,</span> <span class="n">msgRosIotAction</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goal_handles</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">param_config_iot</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="s2">&quot;config_iot&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqtt_sub_topic</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s2">&quot;mqtt&quot;</span><span class="p">][</span><span class="s2">&quot;sub_cb_ros_topic&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http_sub_topic</span> <span class="o">=</span> <span class="n">param_config_iot</span><span class="p">[</span><span class="s2">&quot;google_apps&quot;</span><span class="p">][</span><span class="s2">&quot;spread_sheet_id&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ac</span><span class="o">.</span><span class="n">wait_for_server</span><span class="p">()</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Action server up, we can send goals.&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="IotRosBridgeActionClient.on_transition"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.IotRosBridgeActionClient.on_transition">[docs]</a>    <span class="k">def</span> <span class="nf">on_transition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">goal_handle</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  will be called when there is a change of state</span>
+<span class="sd">        in the Action Client State Machine</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            goal_handle (dictionary): Goals to be send to action server .</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># from on_goal() to on_transition(). goal_handle generated by</span>
+        <span class="c1"># send_goal() is used here.</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">msgRosIotResult</span><span class="p">()</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">goal_handles</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">goal_handles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">goal_handle</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">break</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span>
+            <span class="s2">&quot;Transition Callback. Client Goal Handle #: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Comm. State: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">goal_handle</span><span class="o">.</span><span class="n">get_comm_state</span><span class="p">()))</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Goal Status: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">goal_handle</span><span class="o">.</span><span class="n">get_goal_status</span><span class="p">()))</span>
+
+        <span class="c1"># Comm State - Monitors the State Machine of the Client which is different from Server&#39;s</span>
+        <span class="c1"># Comm State = 2 -&gt; Active</span>
+        <span class="c1"># Comm State = 3 -&gt; Wating for Result</span>
+        <span class="c1"># Comm State = 7 -&gt; Done</span>
+
+        <span class="c1"># if (Comm State == ACTIVE)</span>
+        <span class="k">if</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_comm_state</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: Goal just went active.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># if (Comm State == DONE)</span>
+        <span class="k">if</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_comm_state</span><span class="p">()</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: Goal is DONE&quot;</span><span class="p">)</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="n">goal_handle</span><span class="o">.</span><span class="n">get_terminal_state</span><span class="p">())</span>
+
+            <span class="c1"># get_result() gets the result produced by the Action Server</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">goal_handle</span><span class="o">.</span><span class="n">get_result</span><span class="p">()</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">flag_success</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">flag_success</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span>
+                    <span class="s2">&quot;Goal successfully completed. Client Goal Handle #: &quot;</span> <span class="o">+</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span>
+                    <span class="s2">&quot;Goal failed. Client Goal Handle #: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="IotRosBridgeActionClient.send_goal"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.IotRosBridgeActionClient.send_goal">[docs]</a>    <span class="k">def</span> <span class="nf">send_goal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg_protocol</span><span class="p">,</span> <span class="n">arg_mode</span><span class="p">,</span> <span class="n">arg_topic</span><span class="p">,</span> <span class="n">arg_message</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  is used to send Goals to Action Server.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            arg_protocol (string): protocol used for message(mqtt/http).</span>
+<span class="sd">            arg_mode (string): publish/subscribe to particular topic.</span>
+<span class="sd">            arg_topic (string): Topic name for subscribing/publishing message.</span>
+<span class="sd">            arg_message (string): Message content to be published.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            goal_handle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">goal</span> <span class="o">=</span> <span class="n">msgRosIotGoal</span><span class="p">()</span>
+        <span class="n">goal</span><span class="o">.</span><span class="n">protocol</span> <span class="o">=</span> <span class="n">arg_protocol</span>
+        <span class="n">goal</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">arg_mode</span>
+        <span class="n">goal</span><span class="o">.</span><span class="n">topic</span> <span class="o">=</span> <span class="n">arg_topic</span>
+        <span class="n">goal</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">arg_message</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">loginfo</span><span class="p">(</span><span class="s2">&quot;Sending goal.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># self.on_transition - It is a function pointer to a function which will be called when</span>
+        <span class="c1"># there is a change of state in the Action Client State Machine</span>
+        <span class="n">goal_handle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ac</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span><span class="n">goal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_transition</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">goal_handle</span></div></div>
+
+
+<div class="viewcode-block" id="ManageSheet"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.ManageSheet">[docs]</a><span class="k">class</span> <span class="nc">ManageSheet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a class to update different google sheet in defined format.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        iot_obj: IotRosBridgeActionClient object to send goal to Action server.</span>
+<span class="sd">        inventory_sheet_data: Initial data for inventory sheet.</span>
+<span class="sd">        incoming_order_sheet_data: Initial data for incoming_order sheet.</span>
+<span class="sd">        orders_dispatched_sheet_data: Initial data for dispached_order sheet.</span>
+<span class="sd">        orders_shipped_sheet_data: Initial data for shipped_order sheet.</span>
+<span class="sd">        colour_item_priority_cost (dictionary): It is dictionary which map colour of package</span>
+<span class="sd">                                                to it&#39;s property like what item it is priority</span>
+<span class="sd">                                                and price of it</span>
+<span class="sd">        item_priority_cost (dictionary): It map item to it&#39;s priority and price</span>
+<span class="sd">        order_record: Previous order record. order_id is key.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The constructor for IotRosBridgeActionClient class.</span>
+
+<span class="sd">        Initilize all attribute and wait_for_server to start.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span> <span class="o">=</span> <span class="n">IotRosBridgeActionClient</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;Inventory&quot;</span><span class="p">,</span> <span class="s2">&quot;Team Id&quot;</span><span class="p">:</span> <span class="s2">&quot;VB_1544&quot;</span><span class="p">,</span>
+                                     <span class="s2">&quot;Unique Id&quot;</span><span class="p">:</span> <span class="s2">&quot;AnChRiVi&quot;</span><span class="p">,</span> <span class="s2">&quot;Quantity&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incoming_order_sheet_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;IncomingOrders&quot;</span><span class="p">,</span> <span class="s2">&quot;Team Id&quot;</span><span class="p">:</span> <span class="s2">&quot;VB_1544&quot;</span><span class="p">,</span>
+                                          <span class="s2">&quot;Unique Id&quot;</span><span class="p">:</span> <span class="s2">&quot;AnChRiVi&quot;</span><span class="p">,</span> <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;OrdersDispatched&quot;</span><span class="p">,</span> <span class="s2">&quot;Team Id&quot;</span><span class="p">:</span> <span class="s2">&quot;VB_1544&quot;</span><span class="p">,</span>
+                                             <span class="s2">&quot;Unique Id&quot;</span><span class="p">:</span> <span class="s2">&quot;AnChRiVi&quot;</span><span class="p">,</span> <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;OrdersShipped&quot;</span><span class="p">,</span> <span class="s2">&quot;Team Id&quot;</span><span class="p">:</span> <span class="s2">&quot;VB_1544&quot;</span><span class="p">,</span>
+                                          <span class="s2">&quot;Unique Id&quot;</span><span class="p">:</span> <span class="s2">&quot;AnChRiVi&quot;</span><span class="p">,</span> <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">colour_item_priority_cost</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Medicine&quot;</span><span class="p">,</span> <span class="s2">&quot;HP&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span>
+                                          <span class="s2">&quot;green&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Food&quot;</span><span class="p">,</span> <span class="s2">&quot;MP&quot;</span><span class="p">,</span> <span class="mi">300</span><span class="p">],</span>
+                                          <span class="s2">&quot;yellow&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Clothes&quot;</span><span class="p">,</span> <span class="s2">&quot;LP&quot;</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span> <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Medicine&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;HP&quot;</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;Food&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;MP&quot;</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span>
+                                   <span class="s2">&quot;Clothes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;LP&quot;</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span><span class="mi">5</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order_record</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="ManageSheet.update_inventory_sheet"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.ManageSheet.update_inventory_sheet">[docs]</a>    <span class="k">def</span> <span class="nf">update_inventory_sheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color_package_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function update inventory sheet.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            color_package_dict (dictionary): Colour of all package with position as key.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First capital colour name,position of package,month in no january</span>
+        <span class="c1"># 01,year last two word</span>
+        <span class="n">date_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">()</span>
+        <span class="n">date_time</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">date_time</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">date_time</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">goal_no</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">packages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;02&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;11&quot;</span><span class="p">,</span> <span class="s2">&quot;12&quot;</span><span class="p">,</span> <span class="s2">&quot;20&quot;</span><span class="p">,</span> <span class="s2">&quot;21&quot;</span><span class="p">,</span> <span class="s2">&quot;22&quot;</span><span class="p">,</span> <span class="s2">&quot;30&quot;</span><span class="p">,</span> <span class="s2">&quot;31&quot;</span><span class="p">,</span> <span class="s2">&quot;32&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">packages</span><span class="p">:</span>
+            <span class="n">colour</span><span class="o">=</span><span class="n">color_package_dict</span><span class="p">[</span><span class="n">position</span><span class="p">]</span>
+            <span class="c1">#for position, colour in color_package_dict.items():</span>
+            <span class="n">sku</span> <span class="o">=</span> <span class="n">colour</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="n">position</span> <span class="o">+</span> <span class="n">date_time</span>
+            <span class="n">storage_no</span> <span class="o">=</span> <span class="s2">&quot;R</span><span class="si">{}</span><span class="s2">C</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span><span class="p">[</span><span class="s2">&quot;SKU&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sku</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span><span class="p">[</span><span class="s2">&quot;Item&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colour_item_priority_cost</span><span class="p">[</span><span class="n">colour</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span><span class="p">[</span><span class="s2">&quot;Priority&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colour_item_priority_cost</span><span class="p">[</span>
+                <span class="n">colour</span>
+            <span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span><span class="p">[</span><span class="s2">&quot;Storage Number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">storage_no</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span><span class="p">[</span><span class="s2">&quot;Cost&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colour_item_priority_cost</span><span class="p">[</span><span class="n">colour</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">goal_handles</span><span class="p">[</span><span class="n">goal_no</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span>
+                <span class="s2">&quot;http&quot;</span><span class="p">,</span> <span class="s2">&quot;NA&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">http_sub_topic</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory_sheet_data</span><span class="p">))</span>
+            <span class="n">goal_no</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>      <span class="c1">#2  time for sheet to get updated</span></div>
+
+<div class="viewcode-block" id="ManageSheet.update_incoming_order_sheet"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.ManageSheet.update_incoming_order_sheet">[docs]</a>    <span class="k">def</span> <span class="nf">update_incoming_order_sheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  is used to update Income order sheet.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            order_dict (dictionary): order given on mqtt topic.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">incoming_order_sheet_data</span><span class="p">[</span><span class="s2">&quot;Priority&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span>
+            <span class="n">message</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incoming_order_sheet_data</span><span class="p">[</span><span class="s2">&quot;Cost&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incoming_order_sheet_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">goal_handles</span><span class="p">[</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span>
+            <span class="s2">&quot;http&quot;</span><span class="p">,</span> <span class="s2">&quot;NA&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">http_sub_topic</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incoming_order_sheet_data</span><span class="p">))</span>
+        <span class="c1"># can be removed if no use</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order_record</span><span class="p">[</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">incoming_order_sheet_data</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ManageSheet.update_orders_shipped_sheet"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.ManageSheet.update_orders_shipped_sheet">[docs]</a>    <span class="k">def</span> <span class="nf">update_orders_shipped_sheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_record</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  is used to update order shipped sheet.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            order_id (int): order id of order which is shipped.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None. 2021-01-31 17:33:09</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="n">date_time</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Shipped Status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Yes&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Shipped Date and Time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_time</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Estimated Time of Delivery&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">date</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">2</span><span class="p">],</span><span class="n">date</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">date</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;City&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Order Id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Item&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Priority&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Cost&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Shipped Quantity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;qty&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">[</span><span class="s2">&quot;Order Date and Time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;order_time&quot;</span><span class="p">]</span>
+        
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">goal_handles</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span>
+            <span class="s2">&quot;http&quot;</span><span class="p">,</span> <span class="s2">&quot;NA&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">http_sub_topic</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orders_shipped_sheet_data</span><span class="p">))</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ManageSheet.update_orders_dispatched_sheet"><a class="viewcode-back" href="../../source/API.html#API.node_update_inventory.ManageSheet.update_orders_dispatched_sheet">[docs]</a>    <span class="k">def</span> <span class="nf">update_orders_dispatched_sheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_record</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function  is used to update order dispached sheet.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            order_id (int): order id of order which is dispached.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None.&quot;&quot;&quot;</span>
+            
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="n">date_time</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Dispatch Status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Yes&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Dispatch Date and Time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;City&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Order Id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Item&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Priority&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Cost&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_priority_cost</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;item&quot;</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">[</span><span class="s2">&quot;Dispatch Quantity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;qty&quot;</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">goal_handles</span><span class="p">[</span><span class="n">order_record</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">send_goal</span><span class="p">(</span>
+            <span class="s2">&quot;http&quot;</span><span class="p">,</span> <span class="s2">&quot;NA&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">iot_obj</span><span class="o">.</span><span class="n">http_sub_topic</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orders_dispatched_sheet_data</span><span class="p">))</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, ck.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

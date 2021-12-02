@@ -1,0 +1,24 @@
+<launch>
+
+<!-- Launch Task-4 Simulation Environment in Gazebo -->
+<include file="$(find pkg_vb_sim)/launch/task4_simulation.launch" />
+
+<include file="$(find pkg_task4)/launch/two_ur5_move_group.launch" />
+
+<!--This node is for ur5_2 which play trajectory saved in task4/config/saved_trajectory-->
+<!-- It also call function from another script for detection of colour-->
+<node name= "node_ur5_2_pick_place" pkg= "pkg_task4" type="node_ur5_2_pick_place.py" output="log"/>
+
+<!--This node is for ur5_1 which play trajectory saved in task4/config/saved_trajectory-->
+<node name= "node_ur5_1_pick_place" pkg= "pkg_task4" type="node_ur5_1_pick_place.py" output="log"/>
+
+
+<!-- Recording Bag File for Submission -->
+<arg name="record" default="false"/>
+<arg name="rec_name" default="t4.bag"/>
+<group if="$(arg record)">
+<node name="rosbag_record_pick" pkg="rosbag" type="record"
+        args="record -O $(find pkg_task4)/bag_files/$(arg rec_name) --chunksize=10 /eyrc/vb/ur5_1/vacuum_gripper/logical_camera/ur5_1 /eyrc/vb/ur5_2/vacuum_gripper/logical_camera/ur5_2" output="screen"/>
+</group>
+
+</launch>

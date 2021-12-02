@@ -1,0 +1,7 @@
+node\_ur5\_1\_pick\_place module
+================================
+
+.. automodule:: node_ur5_1_pick_place
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,7 @@
+ur5\_class module
+=================
+
+.. automodule:: ur5_class
+   :members:
+   :undoc-members:
+   :show-inheritance:
